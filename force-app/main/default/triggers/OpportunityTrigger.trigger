@@ -41,5 +41,29 @@ trigger OpportunityTrigger on Opportunity (before update, before delete) {
         }
      
     }
+
+     /*
+    * Question 7
+    * Opportunity Trigger
+    * When an opportunity is updated set the primary contact on the opportunity to the contact on the same account with the title of 'CEO'.
+    * Trigger should only fire on update.
+    */
+    if(Trigger.isBefore && Trigger.isUpdate) {
+        Set<Id> accountIds = new Set<Id> (); 
+    for (Opportunity opp : Trigger.new) { 
+        accountIds.add(opp.AccountId);
+    }    
+    
+    Map<Id, Contact> ceoContactMap = new Map<Id, Contact>();
+    for (Contact con : [SELECT Id, AccountId FROM Contact WHERE AccountId IN : accountIds AND Title = 'CEO']) {
+        ceoContactMap.put(con.AccountId, con);
+    }
+    
+    for (Opportunity opp : Trigger.new) {
+        Contact ceoCon = ceoContactMap.get(opp.AccountId); 
+        if (ceoCon != null) { 
+            opp.Primary_Contact__c = ceoCon.Id;
+        }      
+    }
+    }
 }
-     
