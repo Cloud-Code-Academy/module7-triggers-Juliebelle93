@@ -5,6 +5,7 @@
     * Trigger should only fire on insert.
     */
 trigger AccountTrigger on Account (before insert, after insert) {
+    if (trigger.isBefore && trigger.isInsert) {
     for (Account acc : Trigger.new) {
         if (acc.Type == null) {
             acc.Type = 'Prospect';
@@ -18,8 +19,8 @@ trigger AccountTrigger on Account (before insert, after insert) {
         * Trigger should only fire on insert.
         */
         //Copying shipping address to billing address on account insert
-        if (acc.ShippingStreet != null || acc.ShippingCity != null || 
-            acc.ShippingState != null || acc.ShippingPostalCode != null || 
+        if (acc.ShippingStreet != null && acc.ShippingCity != null && 
+            acc.ShippingState != null && acc.ShippingPostalCode != null && 
             acc.ShippingCountry != null) {
             acc.BillingStreet = acc.ShippingStreet;
             acc.BillingCity = acc.ShippingCity;
@@ -40,6 +41,7 @@ trigger AccountTrigger on Account (before insert, after insert) {
             acc.Rating = 'Hot';
         }
     }
+    }
 
     /*
      * Question 4
@@ -50,16 +52,18 @@ trigger AccountTrigger on Account (before insert, after insert) {
     * Trigger should only fire on insert.
     */    
     //Because this event happens once an account is inserted it will be "after insert" 
-    if(trigger.isAfter && trigger.isInsert) {
+ 
+    if (Trigger.isAfter && Trigger.isInsert) {
         List<Contact> contactsToCreate = new List<Contact>();
-        for(Account acc : Trigger.new) {
-            Contact newContact = new Contact(
-                LastName = 'DefaultContact',
-                Email = 'default@email.com',
-                AccountId = acc.Id
-            );
-            contactsToCreate.add(newContact);
+        for (Account acc : Trigger.new) {
+            Contact defaultContact = new Contact();
+            defaultContact.LastName = 'DefaultContact';
+            defaultContact.Email = 'default@email.com';
+            defaultContact.AccountId = acc.Id;
+            contactsToCreate.add(defaultContact);
         }
-        insert contactsToCreate;
+        if (!contactsToCreate.isEmpty()) {
+            insert contactsToCreate;
+        }
     }
 }

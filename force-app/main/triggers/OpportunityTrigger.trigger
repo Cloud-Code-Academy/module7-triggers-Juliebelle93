@@ -6,7 +6,7 @@
     * Trigger should only fire on update.
     */
 
-trigger OpportunityTrigger on Opportunity (before update, before delete) {
+trigger OpportunityTrigger on Opportunity (before update) {
 
     if(Trigger.isBefore && Trigger.isUpdate) {
         for (Opportunity opp : Trigger.new) {
@@ -24,22 +24,30 @@ trigger OpportunityTrigger on Opportunity (before update, before delete) {
 	 * Trigger should only fire on delete.
 	 */
 
-     if(Trigger.isBefore && Trigger.isDelete) {
-        Set<Id> accountIds = new Set<Id>();
-        for (Opportunity opp : Trigger.old){
-            accountIds.add(opp.AccountId);
+     if (Trigger.isBefore && Trigger.isDelete) {
+        List<Id> oppIds = new List<Id>();
+        for (Opportunity opp : Trigger.old) {
+            oppIds.add(opp.Id);
         }
-     Map<Id, Account> accountMap = new Map<Id, Account> (
-            [SELECT Id, Industry FROM Account Where Id IN :accountIds]
+        
+        Map<Id, Opportunity> oppMap = new Map<Id, Opportunity>(
+            [SELECT Id, StageName, AccountId, Account.Industry FROM Opportunity WHERE Id IN :oppIds]
         );
-
-        for (Opportunity opp : Trigger.Old) {
-            Account acc = accountMap.get(opp.AccountId);
-            if (opp.StageName == 'Closed Won' &&  acc.Industry == 'Banking') {
+        
+        for (Opportunity opp : Trigger.old) {
+            Opportunity fullOpp = oppMap.get(opp.Id);
+            if (fullOpp.StageName == 'Closed Won' && fullOpp.Account.Industry == 'Banking') {
                 opp.addError('Cannot delete closed opportunity for a banking account that is won');
             }
         }
-     
+    }
+    
+    if (Trigger.isBefore && Trigger.isUpdate) {
+        for (Opportunity opp : Trigger.new) {
+            if (opp.Amount <= 5000) {
+                opp.addError('Opportunity amount must be greater than 5000');
+            }
+        }
     }
 
      /*
